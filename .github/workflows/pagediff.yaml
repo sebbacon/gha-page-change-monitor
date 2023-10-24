@@ -9,7 +9,8 @@ jobs:
     env:  # Define diff target here
       # The page to visit
       URL: 'https://sebbacon.github.io/'
-      # The XPath on the page that we're interested in
+      # The XPath for the content you're interested in
+      # (try right-clicking the element in the inspector in Chromium)
       XPATH: '/html/body/header/div/a'
       # A filename where we will save the contents of that XPath
       FILE_PATH: 'sebbacon.html'
