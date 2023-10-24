@@ -1,0 +1,62 @@
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 * * * *"
+
+jobs:
+  check-html:
+    runs-on: ubuntu-latest
+    env:  # Define diff target here
+      # The page to visit
+      URL: 'https://sebbacon.github.io/'
+      # The XPath on the page that we're interested in
+      XPATH: '/html/body/header/div/a'
+      # A filename where we will save the contents of that XPath
+      FILE_PATH: 'sebbacon.html'
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+      with:
+        token: ${{secrets.GITHUB_TOKEN}}
+
+    - name: Set up Python environment
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.11
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Check for diffs
+      working-directory: page-diff
+      run: python check_html.py --url ${{ env.URL }} --xpath ${{ env.XPATH }} --file_path ${{ env.FILE_PATH }}
+      
+    - name: Check for Changes
+      id: git-check
+      run: |
+        git diff --exit-code || echo "git-diff-exit-code=$?" >> $GITHUB_ENV
+      continue-on-error: true
+
+    - name: Configure Git
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+    - name: Commit and Push Output
+      if: env.git-diff-exit-code == '1'
+      run: |
+        git add -A
+        git commit -m "Add output from GitHub Action"
+        git push 
+
+    - name: Fail with a message
+      if: env.git-diff-exit-code == '1'
+      run: |
+        DIFF_OUTPUT=$(git diff HEAD~1 HEAD)
+        echo "Error: Changes detected in the last commit:"
+        echo "$DIFF_OUTPUT"
+        exit 1
+
+
+
